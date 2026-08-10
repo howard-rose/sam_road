@@ -32,15 +32,18 @@ python-igraph = ">=0.10"
 pyyaml = ">=6.0"
 
 # Training framework
-pytorch-lightning = ">=2.0"
 torchmetrics = ">=1.0"
 
 [pypi-dependencies]
 # Not reliably available in conda-forge
+segment-anything = { path = "./sam", editable = true }
 wandb = ">=0.15"
+svgwrite = "*"
+hopcroftkarp = "*"
 addict = ">=2.4"
 tcod = ">=15.0"
 opencv-python = ">=4.8"
+lightning = ">=2.0"
 
 [tasks]
 train-cityscale = "python train.py --config=config/toponet_vitb_512_cityscale.yaml"
