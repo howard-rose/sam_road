@@ -19,6 +19,7 @@ matplotlib = ">=3.7"
 scikit-image = ">=0.21"
 scikit-learn = ">=1.3"
 shapely = ">=2.0"
+geopandas = ">=1.0"
 
 # Computer vision / image I/O
 imageio = ">=2.30"
@@ -46,8 +47,30 @@ opencv-python = ">=4.8"
 lightning = ">=2.0"
 
 [tasks]
+go-tidy-spacenet = { cmd = "go mod tidy", cwd = "spacenet_metrics/apls" }
+go-tidy-cityscale = { cmd = "go mod tidy", cwd = "cityscale_metrics/apls" }
+setup = { depends-on = ["go-tidy-spacenet", "go-tidy-cityscale"] }
+generate-labels-spacenet = { cmd = "python generate_labels.py", cwd = "spacenet" }
+generate-labels-cityscale = { cmd = "python generate_labels.py", cwd = "cityscale" }
+generate-labels-manila = "python generate_manila_labels.py"
+# Manila ablation training
+train-manila-baseline    = "python train.py --config=config/toponet_vitb_512_manila_baseline.yaml"
+train-manila-samroadplus = "python train.py --config=config/toponet_vitb_512_manila_samroadplus.yaml"
+# Manila evaluation (run after inference; pass --dirs <infer_dir_name>)
+eval-manila = "python manila_metrics/run_eval.py"
 train-cityscale = "python train.py --config=config/toponet_vitb_512_cityscale.yaml"
 train-spacenet = "python train.py --config=config/toponet_vitb_256_spacenet.yaml"
-train-cityscale-fp16 = "python train.py --config=config/toponet_vitb_512_cityscale.yaml --precision=16"
-train-spacenet-fp16 = "python train.py --config=config/toponet_vitb_256_spacenet.yaml --precision=16"
+train-cityscale-fp32 = "python train.py --config=config/toponet_vitb_512_cityscale.yaml --precision=32"
+train-spacenet-fp32 = "python train.py --config=config/toponet_vitb_256_spacenet.yaml --precision=32"
 dev-run = "python train.py --config=config/toponet_vitb_256_spacenet.yaml --fast_dev_run"
+dev-run-cityscale = "python train.py --config=config/toponet_vitb_512_cityscale.yaml --fast_dev_run"
+# SAM-Road++ fine-tuning (frozen encoder, new pair_proj dimensions)
+dev-run-samroadplus = "python train.py --config=config/toponet_vitb_256_spacenet_samroadplus.yaml --fast_dev_run"
+dev-run-samroadplus-cityscale = "python train.py --config=config/toponet_vitb_512_cityscale_samroadplus.yaml --fast_dev_run"
+# Pass --pretrain=<path-to-baseline-ckpt> to warm-start compatible layers (feature_proj, transformer_encoder, output_proj)
+finetune-spacenet-samroadplus = "python train.py --config=config/toponet_vitb_256_spacenet_samroadplus.yaml"
+finetune-cityscale-samroadplus = "python train.py --config=config/toponet_vitb_512_cityscale_samroadplus.yaml"
+# Fast fine-tune (<1 hour): frozen encoder uses torch.no_grad → no encoder backward, BATCH_SIZE=8
+# Add --pretrain=<ckpt> to warm-start topo_net layers; omit --limit_train_batches for a full 1-epoch run
+finetune-spacenet-samroadplus-fast = "python train.py --config=config/toponet_vitb_256_spacenet_samroadplus_fast.yaml --limit_train_batches=6000"
+finetune-cityscale-samroadplus-fast = "python train.py --config=config/toponet_vitb_512_cityscale_samroadplus_fast.yaml --limit_train_batches=3000"
