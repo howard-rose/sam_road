@@ -1,9 +1,17 @@
 #!/bin/bash
 
+# Add pixi python to PATH if not already found (needed when called from Windows bash)
+if ! command -v python &> /dev/null; then
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    PIXI_ENV="$SCRIPT_DIR/../.pixi/envs/default"
+    if [ -d "$PIXI_ENV" ]; then
+        export PATH="$PIXI_ENV:$PIXI_ENV/Scripts:$PATH"
+    fi
+fi
+
 # List of directories to process, add more as needed
 output_dirs=(
-    "spacenet_toponet_8x8"
-    "spacenet_toponet_4x4"
+    "infer_2026-08-10_123456"
 )
 
 # Base directory where the output directories are located

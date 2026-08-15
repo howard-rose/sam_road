@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Add pixi python to PATH if not already found (needed when called from Windows bash)
+if ! command -v python &> /dev/null; then
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    PIXI_ENV="$SCRIPT_DIR/../.pixi/envs/default"
+    if [ -d "$PIXI_ENV" ]; then
+        export PATH="$PIXI_ENV:$PIXI_ENV/Scripts:$PATH"
+    fi
+fi
+
 # List of directories to process, add more as needed
 output_dirs=(
     # "cityscale_toponet_no_sam"

@@ -13,7 +13,7 @@ do
         echo "========================$i======================"
         python ./apls/convert.py "../${data_dir}/20cities/region_${i}_graph_gt.pickle" gt.json
         python ./apls/convert.py "../${dir}/graph/${i}.p" prop.json
-        /usr/local/go/bin/go run ./apls/main.go gt.json prop.json ../$dir/results/apls/$i.txt 
+        go run ./apls/main.go gt.json prop.json ../$dir/results/apls/$i.txt
     fi
 done
 python apls.py --dir $dir

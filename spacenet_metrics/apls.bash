@@ -1,4 +1,4 @@
-declare -a arr=( $(jq -r '.test[]' ../spacenet/data_split.json) )
+declare -a arr=( $(python -c "import json; data=json.load(open('../spacenet/data_split.json')); [print(x) for x in data['test']]") )
 
 # source directory
 dir=$1
@@ -16,7 +16,7 @@ do
         python ./apls/convert.py "../${data_dir}/RGB_1.0_meter/${gt_graph}" gt.json
         python ./apls/convert.py "../${dir}/graph/${i}.p" prop.json
         
-        /usr/local/go/bin/go run ./apls/main.go gt.json prop.json ../$dir/results/apls/$i.txt  spacenet
+        go run ./apls/main.go gt.json prop.json ../$dir/results/apls/$i.txt  spacenet
     fi
 done
 python apls.py --dir $dir

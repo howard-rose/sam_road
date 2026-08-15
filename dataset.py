@@ -53,6 +53,12 @@ def spacenet_data_partition():
     return train_list, val_list, test_list
 
 
+def manila_data_partition():
+    with open('./manila/data_split.json', 'r') as jf:
+        data_list = json.load(jf)
+    return data_list['train'], data_list['validation'], data_list['test']
+
+
 def get_patch_info_one_img(image_index, image_size, sample_margin, patch_size, patches_per_edge):
     patch_info = []
     sample_min = sample_margin
@@ -307,7 +313,7 @@ class SatMapDataset(Dataset):
     def __init__(self, config, is_train, dev_run=False):
         self.config = config
         
-        assert self.config.DATASET in {'cityscale', 'spacenet'}
+        assert self.config.DATASET in {'cityscale', 'spacenet', 'manila'}
         if self.config.DATASET == 'cityscale':
             self.IMAGE_SIZE = 2048
             # TODO: SAMPLE_MARGIN here is for training, the one in config is for inference
@@ -332,12 +338,27 @@ class SatMapDataset(Dataset):
             keypoint_mask_pattern = './spacenet/processed/keypoint_mask_{}.png'
             road_mask_pattern = './spacenet/processed/road_mask_{}.png'
             gt_graph_pattern = './spacenet/RGB_1.0_meter/{}__gt_graph.p'
-            
+
             train, val, test = spacenet_data_partition()
 
             # coord-transform ??? -> (x, y)
             # takes [N, 2] points
             coord_transform = lambda v : np.stack([v[:, 1], 400 - v[:, 0]], axis=1)
+
+        elif self.config.DATASET == 'manila':
+            # 512×512 tiles at 0.6 m/px; each image is exactly one patch
+            self.IMAGE_SIZE = 512
+            self.SAMPLE_MARGIN = 0
+
+            rgb_pattern = './manila/images/{}.png'
+            keypoint_mask_pattern = './manila/processed/keypoint_mask_{}.png'
+            road_mask_pattern = './manila/processed/road_mask_{}.png'
+            gt_graph_pattern = './manila/gt_graph/{}__gt_graph.p'
+
+            train, val, test = manila_data_partition()
+
+            # (row, col) -> (col, row) = (x, y); same convention as CityScale
+            coord_transform = lambda v: v[:, ::-1]
 
         self.is_train = is_train
 
@@ -396,6 +417,9 @@ class SatMapDataset(Dataset):
                 return max(1, int(self.IMAGE_SIZE / self.config.PATCH_SIZE)) ** 2 * 2500
             elif self.config.DATASET == 'spacenet':
                 return 84667
+            elif self.config.DATASET == 'manila':
+                # ~50 random patches per tile per epoch
+                return len(self.rgbs) * 50
         else:
             return len(self.eval_patches)
 

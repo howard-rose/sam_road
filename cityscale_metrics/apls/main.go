@@ -99,7 +99,7 @@ type gpsnode struct {
 
 var tol = 0.000001
 
-func (s *gpsnode) Bounds() rtreego.Rect {
+func (s *gpsnode) Bounds() *rtreego.Rect {
   // define the bounds of s to be a rectangle centered at s.location
   // with side lengths 2 * tol:
 

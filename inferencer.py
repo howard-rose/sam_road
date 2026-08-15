@@ -6,7 +6,7 @@ import cv2
 
 from utils import load_config, create_output_dir_and_save_config
 from dataset import cityscale_data_partition, read_rgb_img, get_patch_info_one_img
-from dataset import spacenet_data_partition
+from dataset import spacenet_data_partition, manila_data_partition
 from model import SAMRoad
 import graph_extraction
 import graph_utils
@@ -80,9 +80,12 @@ def infer_one_img(net, img, config):
     fused_road_mask = torch.zeros(img.shape[0:2], dtype=torch.float32).to(args.device, non_blocking=False)
     pixel_counter = torch.zeros(img.shape[0:2], dtype=torch.float32).to(args.device, non_blocking=False)
 
-    # stores img embeddings for toponet
-    # list of [B, D, h, w], len=batch_num
+    # stores img embeddings and (optionally) mask scores for toponet
+    # list of [B, D, h, w], len=batch_num
     img_features = list()
+    # list of [B, 2, H, W] — only populated when USE_EXTENDED_LINE=True
+    use_extended_line = getattr(config, 'USE_EXTENDED_LINE', False)
+    img_mask = list() if use_extended_line else None
 
     for batch_index in range(batch_num):
         offset = batch_index * batch_size
@@ -92,9 +95,13 @@ def infer_one_img(net, img, config):
 
         with torch.no_grad():
             batch_img_patches = batch_img_patches.to(args.device, non_blocking=False)
-            # [B, H, W, 2]
-            mask_scores, patch_img_features = net.infer_masks_and_img_features(batch_img_patches)
+            with torch.autocast(device_type='cuda', dtype=torch.float16):
+                # [B, H, W, 2]
+                mask_scores, patch_img_features = net.infer_masks_and_img_features(batch_img_patches)
             img_features.append(patch_img_features)
+            if use_extended_line:
+                # re-permute to [B, 2, H, W] for TopoNet extended-line sampling
+                img_mask.append(mask_scores.permute(0, 3, 1, 2))
         # Aggregate masks
         for patch_index, patch_info in enumerate(batch_patch_info):
             _, (x0, y0), (x1, y1) = patch_info
@@ -197,9 +204,11 @@ def infer_one_img(net, img, config):
         batch_valid = torch.tensor(collated['valid'], device=args.device)
 
 
+        batch_mask = img_mask[batch_index] if use_extended_line else None
         with torch.no_grad():
-            # [B, N_samples, N_pairs, 1]
-            topo_scores = net.infer_toponet(batch_features, batch_points, batch_pairs, batch_valid)
+            with torch.autocast(device_type='cuda', dtype=torch.float16):
+                # [B, N_samples, N_pairs, 1]
+                topo_scores = net.infer_toponet(batch_features, batch_points, batch_pairs, batch_valid, batch_mask)
                 
         # all-invalid (padded, no neighbors) queries returns nan scores
         # [B, N_samples, N_pairs]
@@ -261,6 +270,10 @@ if __name__ == "__main__":
         _, _, test_img_indices = spacenet_data_partition()
         rgb_pattern = './spacenet/RGB_1.0_meter/{}__rgb.png'
         gt_graph_pattern = './spacenet/RGB_1.0_meter/{}__gt_graph.p'
+    elif config.DATASET == 'manila':
+        _, _, test_img_indices = manila_data_partition()
+        rgb_pattern = './manila/images/{}.png'
+        gt_graph_pattern = './manila/gt_graph/{}__gt_graph.p'
     
     output_dir_prefix = './save/infer_'
     if args.output_dir:

@@ -27,13 +27,23 @@ parser.add_argument(
     "--resume", default=None, help="checkpoint of the last epoch of the model"
 )
 parser.add_argument(
-    "--precision", default=16, help="32 or 16"
+    "--precision", default="16-mixed", help="32, 16-mixed, or bf16-mixed"
 )
 parser.add_argument(
     "--fast_dev_run", default=False, action='store_true'
 )
 parser.add_argument(
     "--dev_run", default=False, action='store_true'
+)
+parser.add_argument(
+    "--pretrain", default=None,
+    help="Path to a pre-trained SAMRoad checkpoint. Compatible weights are loaded "
+         "(shape-matched); mismatched layers (e.g. pair_proj after SAM-Road++ changes) "
+         "are skipped and stay randomly initialized."
+)
+parser.add_argument(
+    "--limit_train_batches", default=None, type=int,
+    help="Cap the number of training mini-batches per epoch. Useful for short fine-tuning runs."
 )
 
 
@@ -42,7 +52,7 @@ if __name__ == "__main__":
     config = load_config(args.config)
     dev_run = args.dev_run or args.fast_dev_run
 
-    
+
     # start a new wandb run to track this script
     wandb.init(
         # set the wandb project where this run will be logged
@@ -55,11 +65,24 @@ if __name__ == "__main__":
 
 
     # Good when model architecture/input shape are fixed.
-    torch.backends.cudnn.benchmark = True
+    # Disabled during fast_dev_run to avoid disk cache writes on low-storage systems.
+    torch.backends.cudnn.benchmark = not dev_run
     torch.backends.cudnn.enabled = True
-    
+    torch.set_float32_matmul_precision('high')
+
 
     net = SAMRoad(config)
+
+    if args.pretrain:
+        ckpt = torch.load(args.pretrain, map_location="cpu")
+        ckpt_sd = ckpt["state_dict"]
+        model_sd = dict(net.named_parameters())
+        compatible = {k: v for k, v in ckpt_sd.items()
+                      if k in model_sd and v.shape == model_sd[k].shape}
+        incompatible = [k for k in ckpt_sd if k not in compatible]
+        net.load_state_dict(compatible, strict=False)
+        print(f"##### Pretrain: loaded {len(compatible)} weights, skipped {len(incompatible)} #####")
+        print("Skipped:", incompatible)
 
     train_ds, val_ds = SatMapDataset(config, is_train=True, dev_run=dev_run), SatMapDataset(config, is_train=False, dev_run=dev_run)
 
@@ -69,6 +92,8 @@ if __name__ == "__main__":
         shuffle=True,
         num_workers=config.DATA_WORKER_NUM,
         pin_memory=True,
+        persistent_workers=config.DATA_WORKER_NUM > 0,
+        prefetch_factor=2 if config.DATA_WORKER_NUM > 0 else None,
         collate_fn=graph_collate_fn,
     )
 
@@ -78,10 +103,12 @@ if __name__ == "__main__":
         shuffle=False,
         num_workers=config.DATA_WORKER_NUM,
         pin_memory=True,
+        persistent_workers=config.DATA_WORKER_NUM > 0,
+        prefetch_factor=2 if config.DATA_WORKER_NUM > 0 else None,
         collate_fn=graph_collate_fn,
     )
 
-    checkpoint_callback = ModelCheckpoint(every_n_epochs=1, save_top_k=-1)
+    checkpoint_callback = ModelCheckpoint(every_n_epochs=1, save_top_k=1)
     lr_monitor = LearningRateMonitor(logging_interval='step')
 
     wandb_logger = WandbLogger()
@@ -98,6 +125,8 @@ if __name__ == "__main__":
         fast_dev_run=args.fast_dev_run,
         # strategy='ddp_find_unused_parameters_true',
         precision=args.precision,
+        accumulate_grad_batches=getattr(config, 'GRAD_ACCUM_STEPS', 1),
+        limit_train_batches=args.limit_train_batches if args.limit_train_batches is not None else 1.0,
         # profiler=profiler
         )
 
