@@ -8,7 +8,7 @@ TMP = "cityscale_raw.zip"
 DEST = pathlib.Path("cityscale")
 
 print("Downloading CityScale dataset from Google Drive...")
-gdown.download(URL, TMP, quiet=False, fuzzy=True)
+gdown.download(URL, TMP, quiet=False)
 
 print("Extracting...")
 DEST.mkdir(exist_ok=True)

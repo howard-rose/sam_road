@@ -8,7 +8,7 @@ TMP = "spacenet_raw.zip"
 DEST = pathlib.Path("spacenet")
 
 print("Downloading SpaceNet dataset from Google Drive...")
-gdown.download(URL, TMP, quiet=False, fuzzy=True)
+gdown.download(URL, TMP, quiet=False)
 
 print("Extracting...")
 DEST.mkdir(exist_ok=True)
