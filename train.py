@@ -49,6 +49,10 @@ parser.add_argument(
     "--seed", default=None, type=int,
     help="Global random seed for reproducibility (sets torch, numpy, python random, and CUDA seeds)."
 )
+parser.add_argument(
+    "--gpu_memory_fraction", default=None, type=float,
+    help="Fraction of GPU memory to reserve (0.0–1.0). Use on shared GPUs to avoid OOM for other users."
+)
 
 
 if __name__ == "__main__":
@@ -77,6 +81,9 @@ if __name__ == "__main__":
     torch.backends.cudnn.deterministic = args.seed is not None
     torch.backends.cudnn.enabled = True
     torch.set_float32_matmul_precision('high')
+
+    if args.gpu_memory_fraction is not None:
+        torch.cuda.set_per_process_memory_fraction(args.gpu_memory_fraction)
 
 
     net = SAMRoad(config)
