@@ -45,6 +45,10 @@ parser.add_argument(
     "--limit_train_batches", default=None, type=int,
     help="Cap the number of training mini-batches per epoch. Useful for short fine-tuning runs."
 )
+parser.add_argument(
+    "--seed", default=None, type=int,
+    help="Global random seed for reproducibility (sets torch, numpy, python random, and CUDA seeds)."
+)
 
 
 if __name__ == "__main__":
@@ -64,9 +68,13 @@ if __name__ == "__main__":
     )
 
 
+    if args.seed is not None:
+        pl.seed_everything(args.seed, workers=True)
+
     # Good when model architecture/input shape are fixed.
-    # Disabled during fast_dev_run to avoid disk cache writes on low-storage systems.
-    torch.backends.cudnn.benchmark = not dev_run
+    # Disabled during fast_dev_run (disk cache) and when seeded (non-deterministic algorithm selection).
+    torch.backends.cudnn.benchmark = not dev_run and args.seed is None
+    torch.backends.cudnn.deterministic = args.seed is not None
     torch.backends.cudnn.enabled = True
     torch.set_float32_matmul_precision('high')
 
