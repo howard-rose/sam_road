@@ -35,6 +35,7 @@ pyyaml = ">=6.0"
 
 # Training framework
 torchmetrics = ">=1.0"
+go = ">=1.27.1,<2"
 
 [pypi-dependencies]
 # Not reliably available in conda-forge
