@@ -42,6 +42,7 @@ segment-anything = { path = "./sam", editable = true }
 wandb = ">=0.15"
 svgwrite = "*"
 hopcroftkarp = "*"
+gdown = ">=5.1"
 addict = ">=2.4"
 tcod = ">=15.0"
 opencv-python = ">=4.8"
@@ -51,6 +52,8 @@ lightning = ">=2.0"
 go-tidy-spacenet = { cmd = "go mod tidy", cwd = "spacenet_metrics/apls" }
 go-tidy-cityscale = { cmd = "go mod tidy", cwd = "cityscale_metrics/apls" }
 setup = { depends-on = ["go-tidy-spacenet", "go-tidy-cityscale"] }
+download-spacenet = "python download_spacenet.py"
+download-cityscale = "python download_cityscale.py"
 generate-labels-spacenet = { cmd = "python generate_labels.py", cwd = "spacenet" }
 generate-labels-cityscale = { cmd = "python generate_labels.py", cwd = "cityscale" }
 generate-labels-manila = "python generate_manila_labels.py"
