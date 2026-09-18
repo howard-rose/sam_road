@@ -698,7 +698,7 @@ class SAMRoad(pl.LightningModule):
             viz_gt_road = road_mask[:max_viz_num, ...]
             
             columns = ['rgb', 'gt_keypoint', 'gt_road', 'pred_keypoint', 'pred_road']
-            data = [[wandb.Image(x.cpu().numpy()) for x in row] for row in list(zip(viz_rgb, viz_gt_keypoint, viz_gt_road, viz_pred_keypoint, viz_pred_road))]
+            data = [[wandb.Image(x.float().cpu().numpy()) for x in row] for row in list(zip(viz_rgb, viz_gt_keypoint, viz_gt_road, viz_pred_keypoint, viz_pred_road))]
             self.logger.log_table(key='viz_table', columns=columns, data=data)
 
         self.keypoint_iou.update(mask_scores[..., 0], keypoint_mask)
