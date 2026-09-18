@@ -1,0 +1,39 @@
+DATASET: 'cityscale'
+
+# SAM-Road baseline full training on A100 (unfrozen encoder).
+# DATA_WORKER_NUM must stay 0: CityScale loads all tiles into RAM, so each
+# additional worker forks the full ~3 GB dataset copy → OOM on any GPU.
+NO_SAM: False
+
+SAM_VERSION: 'vit_b'
+SAM_CKPT_PATH: 'sam_ckpts/sam_vit_b_01ec64.pth'
+PATCH_SIZE: 512
+BATCH_SIZE: 8
+GRAD_ACCUM_STEPS: 4
+DATA_WORKER_NUM: 0
+TRAIN_EPOCHS: 20
+BASE_LR: 0.001
+FREEZE_ENCODER: False
+ENCODER_LR_FACTOR: 0.1
+ENCODER_LORA: False
+FOCAL_LOSS: False
+USE_SAM_DECODER: False
+
+# TOPONET — standard (no extended-line)
+TOPO_SAMPLE_NUM: 512
+TOPONET_VERSION: 'normal'
+USE_EXTENDED_LINE: False
+
+# Inference
+INFER_BATCH_SIZE: 64
+SAMPLE_MARGIN: 64
+INFER_PATCHES_PER_EDGE: 16
+
+ITSC_THRESHOLD: 0.248
+ROAD_THRESHOLD: 0.364
+TOPO_THRESHOLD: 0.500
+# pixels
+ITSC_NMS_RADIUS: 8
+ROAD_NMS_RADIUS: 16
+NEIGHBOR_RADIUS: 64
+MAX_NEIGHBOR_QUERIES: 16

@@ -64,7 +64,9 @@ train-manila-samroadplus = "python train.py --config=config/toponet_vitb_512_man
 # Manila evaluation (run after inference; pass --dirs <infer_dir_name>)
 eval-manila = "python manila_metrics/run_eval.py"
 train-cityscale = "python train.py --config=config/toponet_vitb_512_cityscale.yaml"
+train-cityscale-baseline-a100 = "python train.py --config=config/toponet_vitb_512_cityscale_baseline_a100.yaml --precision=bf16-mixed"
 train-spacenet = "python train.py --config=config/toponet_vitb_256_spacenet.yaml"
+train-spacenet-baseline-a100 = "python train.py --config=config/toponet_vitb_256_spacenet_baseline_a100.yaml --precision=bf16-mixed"
 train-cityscale-fp32 = "python train.py --config=config/toponet_vitb_512_cityscale.yaml --precision=32"
 train-spacenet-fp32 = "python train.py --config=config/toponet_vitb_256_spacenet.yaml --precision=32"
 dev-run = "python train.py --config=config/toponet_vitb_256_spacenet.yaml --fast_dev_run"
